@@ -623,7 +623,7 @@ function createPDFTableWithPagination(
 
     headStyles: {
       fillColor: [188, 108, 37],
-      fontSize: 9,
+      fontSize: 10,
       font: "helvetica",
       fontStyle: "bold",
       textColor: [255, 255, 255],
@@ -636,11 +636,11 @@ function createPDFTableWithPagination(
     styles: {
       fontSize: 9,
       font: "helvetica",
-      fontStyle: "normal",
+      fontStyle: "bold",
       cellPadding: 2,
       textColor: [0, 0, 0],
-      lineWidth: 0.3,
-      lineColor: [180, 180, 180], // Lighter body grid lines
+      lineWidth: 0.5,
+      lineColor: [100, 100, 100],
     },
 
     columnStyles: {
@@ -675,11 +675,11 @@ function createPDFTableWithPagination(
         doc.line(12, 25, 198, 25);
 
         // Invoice info - Customer Name (left), Date (right)
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
         doc.setTextColor(50, 50, 50);
         doc.text(`Customer Name: ${customerName}`, 15, 32);
-        doc.text(`Date: ${invoiceDate}`, 195, 32, { align: "right" });
+        doc.text(`Date: ${date}`, 195, 32, { align: "right" });
       }
 
       // Add page number at bottom with more space from border
@@ -1239,9 +1239,9 @@ function generateInvoice() {
   doc.setLineWidth(0.5);
   doc.line(12, 25, 198, 25);
 
-  // Invoice Info Section - Single line: Customer Name (left), Date (right)
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  // Invoice Info Section - Customer Name and Date
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
   doc.setTextColor(50, 50, 50);
 
   // Left: Customer Name
@@ -1289,7 +1289,7 @@ function generateInvoice() {
 
     headStyles: {
       fillColor: [188, 108, 37],
-      fontSize: 9,
+      fontSize: 10,
       font: "helvetica",
       fontStyle: "bold",
       textColor: [255, 255, 255],
@@ -1302,11 +1302,11 @@ function generateInvoice() {
     styles: {
       fontSize: 9,
       font: "helvetica",
-      fontStyle: "normal",
+      fontStyle: "bold",
       cellPadding: 2,
       textColor: [0, 0, 0],
-      lineWidth: 0.3,
-      lineColor: [180, 180, 180], // Lighter body grid lines
+      lineWidth: 0.5,
+      lineColor: [100, 100, 100],
     },
 
     columnStyles: {
@@ -1341,8 +1341,8 @@ function generateInvoice() {
         doc.line(12, 25, 198, 25);
 
         // Add invoice info on continued pages - Customer Name (left), Date (right)
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
         doc.setTextColor(50, 50, 50);
         doc.text(`Customer Name: ${customerName}`, 15, 32);
         doc.text(`Date: ${date}`, 195, 32, { align: "right" });
@@ -2704,7 +2704,7 @@ function regenerateAndOpenInvoice(invoiceId) {
 
     headStyles: {
       fillColor: [188, 108, 37],
-      fontSize: 9,
+      fontSize: 10,
       font: "helvetica",
       fontStyle: "bold",
       textColor: [255, 255, 255],
@@ -2717,11 +2717,11 @@ function regenerateAndOpenInvoice(invoiceId) {
     styles: {
       fontSize: 9,
       font: "helvetica",
-      fontStyle: "normal",
+      fontStyle: "bold",
       cellPadding: 2,
       textColor: [0, 0, 0],
-      lineWidth: 0.3,
-      lineColor: [180, 180, 180], // Lighter body grid lines
+      lineWidth: 0.5,
+      lineColor: [100, 100, 100],
     },
 
     columnStyles: {
@@ -2756,11 +2756,11 @@ function regenerateAndOpenInvoice(invoiceId) {
         doc.line(12, 25, 198, 25);
 
         // Add invoice info on continued pages - Customer Name (left), Date (right)
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
         doc.setTextColor(50, 50, 50);
-        doc.text(`Customer Name: ${invoice.customerName || "N/A"}`, 15, 32);
-        doc.text(`Date: ${invoice.date}`, 195, 32, { align: "right" });
+        doc.text(`Customer Name: ${customerName}`, 15, 32);
+        doc.text(`Date: ${date}`, 195, 32, { align: "right" });
       }
 
       // Add page number at bottom with more space from border
@@ -2912,7 +2912,7 @@ function regenerateInvoice(invoiceId) {
 
     headStyles: {
       fillColor: [188, 108, 37],
-      fontSize: 9,
+      fontSize: 10,
       font: "helvetica",
       fontStyle: "bold",
       textColor: [255, 255, 255],
@@ -2925,11 +2925,11 @@ function regenerateInvoice(invoiceId) {
     styles: {
       fontSize: 9,
       font: "helvetica",
-      fontStyle: "normal",
+      fontStyle: "bold",
       cellPadding: 2,
       textColor: [0, 0, 0],
-      lineWidth: 0.3,
-      lineColor: [180, 180, 180], // Lighter body grid lines
+      lineWidth: 0.5,
+      lineColor: [100, 100, 100],
     },
 
     columnStyles: {
