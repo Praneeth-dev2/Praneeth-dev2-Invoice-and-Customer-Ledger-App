@@ -39,6 +39,8 @@ window.addEventListener("load", function () {
 function autoSaveDraft() {
   const customerName = document.getElementById("customerName")?.value || "";
   const invoiceDate = document.getElementById("invoiceDate")?.value || "";
+  const previousBalance =
+    document.getElementById("previousBalance")?.value || "";
 
   // Only auto-save if there's at least one item or customer name is entered
   if (items.length === 0 && !customerName.trim()) {
@@ -55,6 +57,7 @@ function autoSaveDraft() {
     invoiceMode: invoiceMode,
     timestamp: new Date().toISOString(),
     currentPendingId: currentPendingId, // Track if this draft is from a pending invoice
+    previousBalance: previousBalance,
   };
 
   localStorage.setItem("invoiceAutoDraft", JSON.stringify(draft));
@@ -235,6 +238,8 @@ function restoreDraftData(draft) {
   // Set customer name and date
   document.getElementById("customerName").value = draft.customerName || "";
   document.getElementById("invoiceDate").value = draft.invoiceDate || "";
+  document.getElementById("previousBalance").value =
+    draft.previousBalance ?? "";
 
   // Restore items
   items = draft.items || [];
@@ -484,6 +489,14 @@ document.getElementById("invoiceDate").addEventListener("change", function () {
   triggerAutoSave();
 });
 
+// Update grand total and auto-save when previous balance changes
+document
+  .getElementById("previousBalance")
+  .addEventListener("input", function () {
+    updateTotal();
+    triggerAutoSave();
+  });
+
 // Auto-calculate net rate when MRP or discount changes
 document.getElementById("mrp").addEventListener("input", function () {
   const mrp = parseFloat(this.value) || 0;
@@ -596,7 +609,7 @@ function createPDFTableWithPagination(
   invoiceDate,
 ) {
   doc.autoTable({
-    startY: 38,
+    startY: 32,
     head: [["S.No", "Item Description", "Qty", "MRP", "Net", "Total"]],
     body: tableData,
     theme: "grid",
@@ -637,7 +650,7 @@ function createPDFTableWithPagination(
       fontSize: 9,
       font: "helvetica",
       fontStyle: "bold",
-      cellPadding: 2,
+      cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
       textColor: [0, 0, 0],
       lineWidth: 0.5,
       lineColor: [100, 100, 100],
@@ -652,16 +665,16 @@ function createPDFTableWithPagination(
       5: { cellWidth: 30, halign: "right" },
     },
 
-    margin: { left: 15, right: 15, top: 38, bottom: 35 },
+    margin: { left: 15, right: 15, top: 32, bottom: 25 },
     showHead: "everyPage",
     rowPageBreak: "avoid",
     tableLineWidth: 0.3,
     tableLineColor: [80, 80, 80],
     didDrawPage: function (data) {
-      // Add border on every page
-      doc.setDrawColor(188, 108, 37);
-      doc.setLineWidth(0.5);
-      doc.rect(7, 7, 196, 283);
+      // // Add border on every page
+      // doc.setDrawColor(188, 108, 37);
+      // doc.setLineWidth(0.5);
+      // doc.rect(7, 7, 196, 283);
 
       // Add header on every page
       if (data.pageNumber > 1) {
@@ -694,6 +707,74 @@ function createPDFTableWithPagination(
       );
     },
   });
+}
+
+// Generate invoice summary rows inside the items table
+function buildInvoiceSummaryRows(itemTotal, previousBalance) {
+  const hasPreviousBalance =
+    previousBalance !== null &&
+    previousBalance !== undefined &&
+    String(previousBalance).trim() !== "";
+
+  const previous = hasPreviousBalance ? Number(previousBalance) : null;
+
+  const grandTotal = itemTotal + (previous ?? 0);
+
+  const money = (amount) => Number(amount).toFixed(2);
+
+  function createSummaryRow(label, value, highlight = false) {
+    const background = highlight ? [245, 235, 224] : [255, 255, 255];
+
+    return [
+      {
+        content: "",
+        styles: { fillColor: background },
+      },
+      {
+        content: "",
+        styles: { fillColor: background },
+      },
+      {
+        content: label,
+        colSpan: 3,
+        styles: {
+          halign: "left",
+          font: "helvetica",
+          fontSize: 10.5,
+          fontStyle: "bold",
+          fillColor: background,
+          textColor: [0, 0, 0],
+        },
+      },
+      {
+        content: value,
+        styles: {
+          halign: "right",
+          font: "helvetica",
+          fontSize: 10.5,
+          fontStyle: "bold",
+          fillColor: background,
+          textColor: [0, 0, 0],
+        },
+      },
+    ];
+  }
+
+  return {
+    rows: [
+      createSummaryRow("Total Amount:", money(itemTotal)),
+
+      createSummaryRow(
+        "Previous Balance:",
+        previous === null ? "NA" : money(previous),
+      ),
+
+      createSummaryRow("Total:", money(grandTotal), true),
+    ],
+
+    previousBalance: previous,
+    grandTotal: grandTotal,
+  };
 }
 
 // Update items table
@@ -1107,13 +1188,41 @@ function removeItem(sno) {
 }
 
 // Update total amount
+// Update total amount
 function updateTotal() {
-  const total = items.reduce((sum, item) => sum + parseFloat(item.total), 0);
-  // In "later" mode, show "-" if total is 0
+  // Calculate total of all invoice items
+  const total = items.reduce(
+    (sum, item) => sum + parseFloat(item.total || 0),
+    0,
+  );
+
+  // Display item total in the main Total Bill Amount section
   if (invoiceMode === "later" && total === 0) {
     document.getElementById("totalBillAmount").textContent = "-";
   } else {
     document.getElementById("totalBillAmount").textContent = total.toFixed(2);
+  }
+
+  // Get previous balance
+  const previousBalanceInput = document
+    .getElementById("previousBalance")
+    .value.trim();
+
+  const previousBalance =
+    previousBalanceInput === "" ? 0 : Number(previousBalanceInput);
+
+  // Calculate grand total
+  const grandTotal = total + previousBalance;
+
+  // Display grand total inside Previous Balance section
+  const totalDisplay = document.getElementById("previousBalanceTotal");
+  const grandTotalDisplay = document.getElementById("grandTotalAmount");
+
+  if (previousBalanceInput !== "") {
+    totalDisplay.style.display = "block";
+    grandTotalDisplay.textContent = grandTotal.toFixed(2);
+  } else {
+    totalDisplay.style.display = "none";
   }
 }
 
@@ -1127,6 +1236,10 @@ function clearAll() {
   if (confirm("Are you sure you want to clear all items?")) {
     items = [];
     itemCounter = 1;
+
+    // Clear previous balance
+    document.getElementById("previousBalance").value = "";
+
     currentInvoicePDF = null;
     currentInvoiceData = null;
     document.getElementById("downloadBtn").disabled = true;
@@ -1197,6 +1310,36 @@ function generateInvoice() {
   // Recalculate total from all items' net values (in case of edits)
   updateTotal();
 
+  // Calculate item total
+  const itemTotal = items.reduce(
+    (sum, item) => sum + Number(item.total || 0),
+    0,
+  );
+
+  // Get optional previous balance
+  const previousBalanceInput = document
+    .getElementById("previousBalance")
+    .value.trim();
+
+  // Validate previous balance
+  if (
+    previousBalanceInput !== "" &&
+    (!Number.isFinite(Number(previousBalanceInput)) ||
+      Number(previousBalanceInput) < 0)
+  ) {
+    alert("Please enter a valid previous balance or leave it empty.");
+    return;
+  }
+
+  // Generate invoice summary
+  const invoiceSummary = buildInvoiceSummaryRows(
+    itemTotal,
+    previousBalanceInput,
+  );
+
+  const previousBalance = invoiceSummary.previousBalance;
+  const grandTotal = invoiceSummary.grandTotal;
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
@@ -1232,12 +1375,12 @@ function generateInvoice() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(188, 108, 37);
-  doc.text("ESTIMATE", 105, 20, { align: "center" });
+  doc.text("ESTIMATE", 105, 16, { align: "center" });
 
   // Add decorative line under title
   doc.setDrawColor(188, 108, 37);
   doc.setLineWidth(0.5);
-  doc.line(12, 25, 198, 25);
+  doc.line(12, 21, 198, 21);
 
   // Invoice Info Section - Customer Name and Date
   doc.setFont("helvetica", "bold");
@@ -1245,10 +1388,10 @@ function generateInvoice() {
   doc.setTextColor(50, 50, 50);
 
   // Left: Customer Name
-  doc.text(`Customer Name: ${customerName}`, 15, 32);
+  doc.text(`Customer Name: ${customerName}`, 15, 27);
 
   // Right: Date
-  doc.text(`Date: ${date}`, 195, 32, { align: "right" });
+  doc.text(`Date: ${date}`, 195, 27, { align: "right" });
 
   // Table data
   const tableData = items.map((item, index) => [
@@ -1262,9 +1405,9 @@ function generateInvoice() {
 
   // Add table with helvetica font and pagination
   doc.autoTable({
-    startY: 38,
+    startY: 32,
     head: [["S.No", "Item Description", "Qty", "MRP", "Net", "Total"]],
-    body: tableData,
+    body: [...tableData, ...invoiceSummary.rows],
     theme: "grid",
 
     willDrawCell: function (data) {
@@ -1303,7 +1446,7 @@ function generateInvoice() {
       fontSize: 9,
       font: "helvetica",
       fontStyle: "bold",
-      cellPadding: 2,
+      cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
       textColor: [0, 0, 0],
       lineWidth: 0.5,
       lineColor: [100, 100, 100],
@@ -1318,34 +1461,34 @@ function generateInvoice() {
       5: { cellWidth: 30, halign: "right" },
     },
 
-    margin: { left: 15, right: 15, top: 38, bottom: 35 },
+    margin: { left: 15, right: 15, top: 32, bottom: 25 },
     showHead: "everyPage",
     rowPageBreak: "avoid",
     tableLineWidth: 0.3,
     tableLineColor: [80, 80, 80],
     didDrawPage: function (data) {
-      // Add border on every page
-      doc.setDrawColor(188, 108, 37);
-      doc.setLineWidth(0.5);
-      doc.rect(7, 7, 196, 283);
+      // // Add border on every page
+      // doc.setDrawColor(188, 108, 37);
+      // doc.setLineWidth(0.5);
+      // doc.rect(7, 7, 196, 283);
 
       // Add header on every page
       if (data.pageNumber > 1) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(20);
         doc.setTextColor(188, 108, 37);
-        doc.text("ESTIMATE", 105, 20, { align: "center" });
+        doc.text("ESTIMATE", 105, 16, { align: "center" });
 
         doc.setDrawColor(188, 108, 37);
         doc.setLineWidth(0.5);
-        doc.line(12, 25, 198, 25);
+        doc.line(12, 21, 198, 21);
 
-        // Add invoice info on continued pages - Customer Name (left), Date (right)
+        // Add invoice info on continued pages
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(50, 50, 50);
-        doc.text(`Customer Name: ${customerName}`, 15, 32);
-        doc.text(`Date: ${date}`, 195, 32, { align: "right" });
+        doc.text(`Customer Name: ${customerName}`, 15, 27);
+        doc.text(`Date: ${date}`, 195, 27, { align: "right" });
       }
 
       // Add page number at bottom with more space from border
@@ -1361,31 +1504,18 @@ function generateInvoice() {
     },
   });
 
-  // Add total section with background
+  // Footer after the invoice table
   const finalY = doc.lastAutoTable.finalY + 8;
 
-  // Draw total box
-  doc.setFillColor(245, 235, 224);
-  doc.setDrawColor(188, 108, 37);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(15, finalY, 180, 14, 2, 2, "FD");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(188, 108, 37);
-  const totalAmount = document.getElementById("totalBillAmount").textContent;
-  doc.text("Total Amount:", 19, finalY + 9);
-  doc.text(`${totalAmount}`, 191, finalY + 9, { align: "right" });
-
-  // Add footer with decorative line
   doc.setDrawColor(221, 161, 94);
   doc.setLineWidth(0.3);
-  doc.line(15, finalY + 22, 195, finalY + 22);
+  doc.line(15, finalY, 195, finalY);
 
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);
   doc.setTextColor(128, 128, 128);
-  doc.text("Thank you for your business!", 105, finalY + 28, {
+
+  doc.text("Thank you for your business!", 105, finalY + 6, {
     align: "center",
   });
 
@@ -1412,22 +1542,35 @@ function generateInvoice() {
   const filename = `${sanitizedName}_${dateStr}.pdf`;
 
   // Save invoice data to localStorage
+  // Save invoice data to localStorage
   const invoiceData = {
     id: Date.now(),
     invoiceNumber: invoiceNumber,
     customerName: customerName,
     filename: filename,
-    date: date, // Use the formatted date from the form, not the generation date
+    date: date,
     time: now.toLocaleTimeString("en-IN"),
+
     generatedAt: now.toLocaleString("en-IN", {
       dateStyle: "short",
       timeStyle: "medium",
-    }), // Current date and time when generated
-    invoiceDate: selectedDate || now.toISOString().split("T")[0], // Save the form date in YYYY-MM-DD format
-    totalAmount: totalAmount,
+    }),
+
+    invoiceDate: selectedDate || now.toISOString().split("T")[0],
+
+    // Original items total
+    totalAmount: itemTotal.toFixed(2),
+
+    // Previous balance (null means not entered)
+    previousBalance: previousBalance,
+
+    // Final amount including previous balance
+    grandTotal: grandTotal.toFixed(2),
+
     itemCount: items.length,
-    items: [...items], // Copy of items array
-    pdfData: doc.output("datauristring"), // Save PDF data
+    items: [...items],
+
+    pdfData: doc.output("datauristring"),
   };
 
   savedInvoices.unshift(invoiceData); // Add to beginning of array
@@ -1879,6 +2022,10 @@ function completeNewOrder(mode) {
   currentInvoicePDF = null;
   currentInvoiceData = null;
   currentPendingId = null;
+
+  // Clear previous balance for new order
+  document.getElementById("previousBalance").value = "";
+
   updateTable();
   updateTotal();
   updateButtonStates();
@@ -2677,7 +2824,7 @@ function regenerateAndOpenInvoice(invoiceId) {
   ]);
 
   doc.autoTable({
-    startY: 38,
+    startY: 32,
     head: [["S.No", "Item Description", "Qty", "MRP", "Net", "Total"]],
     body: tableData,
     theme: "grid",
@@ -2718,7 +2865,7 @@ function regenerateAndOpenInvoice(invoiceId) {
       fontSize: 9,
       font: "helvetica",
       fontStyle: "bold",
-      cellPadding: 2,
+      cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
       textColor: [0, 0, 0],
       lineWidth: 0.5,
       lineColor: [100, 100, 100],
@@ -2733,16 +2880,16 @@ function regenerateAndOpenInvoice(invoiceId) {
       5: { cellWidth: 30, halign: "right" },
     },
 
-    margin: { left: 15, right: 15, top: 38, bottom: 35 },
+    margin: { left: 15, right: 15, top: 32, bottom: 25 },
     showHead: "everyPage",
     rowPageBreak: "avoid",
     tableLineWidth: 0.3,
     tableLineColor: [80, 80, 80],
     didDrawPage: function (data) {
-      // Add border on every page
-      doc.setDrawColor(188, 108, 37);
-      doc.setLineWidth(0.5);
-      doc.rect(7, 7, 196, 283);
+      // // Add border on every page
+      // doc.setDrawColor(188, 108, 37);
+      // doc.setLineWidth(0.5);
+      // doc.rect(7, 7, 196, 283);
 
       // Add header on every page
       if (data.pageNumber > 1) {
@@ -2789,18 +2936,6 @@ function regenerateAndOpenInvoice(invoiceId) {
   doc.setTextColor(188, 108, 37);
   doc.text("Total Amount:", 19, finalY + 9);
   doc.text(`${invoice.totalAmount}`, 191, finalY + 9, { align: "right" });
-
-  // Add footer with decorative line
-  doc.setDrawColor(221, 161, 94);
-  doc.setLineWidth(0.3);
-  doc.line(15, finalY + 22, 195, finalY + 22);
-
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
-  doc.setTextColor(128, 128, 128);
-  doc.text("Thank you for your business!", 105, finalY + 28, {
-    align: "center",
-  });
 
   // Open in new tab
   const pdfDataUri = doc.output("datauristring");
@@ -2885,7 +3020,7 @@ function regenerateInvoice(invoiceId) {
   ]);
 
   doc.autoTable({
-    startY: 38,
+    startY: 32,
     head: [["S.No", "Item Description", "Qty", "MRP", "Net", "Total"]],
     body: tableData,
     theme: "grid",
@@ -2926,7 +3061,7 @@ function regenerateInvoice(invoiceId) {
       fontSize: 9,
       font: "helvetica",
       fontStyle: "bold",
-      cellPadding: 2,
+      cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
       textColor: [0, 0, 0],
       lineWidth: 0.5,
       lineColor: [100, 100, 100],
@@ -2941,7 +3076,7 @@ function regenerateInvoice(invoiceId) {
       5: { cellWidth: 30, halign: "right" },
     },
 
-    margin: { left: 15, right: 15, top: 38, bottom: 35 },
+    margin: { left: 15, right: 15, top: 32, bottom: 25 },
     // showHead: "everyPage",
     // rowPageBreak: "avoid",
   });

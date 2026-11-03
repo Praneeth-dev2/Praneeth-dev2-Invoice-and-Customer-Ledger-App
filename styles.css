@@ -810,7 +810,7 @@ input[readonly] {
   .mode-toggle-container {
     flex-direction: column;
   }
-  
+
   .mode-toggle-btn {
     width: 100%;
     justify-content: center;
@@ -844,4 +844,38 @@ input[readonly] {
   to {
     opacity: 0;
   }
+}
+
+/* Previous Balance Section */
+/* Previous Balance Section */
+.previous-balance-section {
+  width: 100%;
+  max-width: none;
+  margin: 18px 0 8px 0;
+  padding: 14px 16px;
+  background: #f5ebe0;
+  border: 1px solid #dda15e;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.previous-balance-section label {
+  color: #6b4b2f;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+.previous-balance-section input {
+  width: 100%;
+}
+
+.previous-balance-total {
+  display: none;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dda15e;
+  color: #6b4b2f;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: right;
 }

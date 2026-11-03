@@ -209,6 +209,27 @@
         </div>
       </div>
 
+      <!-- Previous Balance Section -->
+      <div class="previous-balance-section">
+        <label for="previousBalance" class="form-label">
+          Previous Balance (₹)
+          <span class="text-muted">(Optional)</span>
+        </label>
+
+        <input
+          type="number"
+          class="form-control"
+          id="previousBalance"
+          min="0"
+          step="0.01"
+          placeholder="Enter previous balance (if any)"
+        />
+
+        <div id="previousBalanceTotal" class="previous-balance-total">
+          Total: ₹<span id="grandTotalAmount">0.00</span>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
       <div class="action-buttons mt-4">
         <button
